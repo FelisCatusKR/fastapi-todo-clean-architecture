@@ -1,4 +1,5 @@
 import abc
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -13,7 +14,7 @@ class AbstractTodoRepository(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_by_id(self, todo_id: int) -> Todo | None:
+    def get_by_id(self, todo_id: UUID) -> Todo | None:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -32,14 +33,14 @@ class InMemoryTodoRepository(AbstractTodoRepository):
     def add(self, todo: Todo) -> Todo:
         return self._db.add_item(todo)
 
-    def get_by_id(self, todo_id: int) -> Todo | None:
+    def get_by_id(self, todo_id: UUID) -> Todo | None:
         return self._db.get_item_by_id(todo_id)
 
     def get_all(self) -> list[Todo]:
         return self._db.get_all_items()
 
     def delete(self, todo: Todo) -> bool:
-        return True
+        return self._db.remove_item(todo)
 
 
 class SqlalchemyTodoRepository(AbstractTodoRepository):
@@ -52,7 +53,7 @@ class SqlalchemyTodoRepository(AbstractTodoRepository):
         self.session.refresh(todo)
         return todo
 
-    def get_by_id(self, todo_id: int) -> Todo | None:
+    def get_by_id(self, todo_id: UUID) -> Todo | None:
         query_result = self.session.scalars(select(Todo).filter_by(todo_id).limit(1))
         return query_result.one_or_none()
 

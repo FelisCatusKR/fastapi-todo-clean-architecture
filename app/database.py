@@ -1,5 +1,6 @@
 from contextlib import contextmanager, AbstractContextManager
 from typing import Callable
+from uuid import UUID
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker, Session
@@ -8,24 +9,25 @@ from .model import Todo
 
 
 class InMemoryDatabase:
+    _list: list[Todo]
+
     def __init__(self):
         self._list = []
-        self._counter = 0
 
     def add_item(self, todo: Todo) -> Todo:
-        self._counter += 1
-        new_todo = Todo(todo_id=self._counter, title=todo.title, is_completed=todo.is_completed)
+        new_todo = Todo(title=todo.title, is_completed=todo.is_completed)
         self._list.append(new_todo)
         return new_todo
 
-    def get_item_by_id(self, todo_id: int) -> Todo | None:
+    def get_item_by_id(self, todo_id: UUID) -> Todo | None:
         return next((todo for todo in self._list if todo.todo_id == todo_id), None)
 
     def get_all_items(self) -> list[Todo]:
         return [todo for todo in self._list]
 
-    def remove_item(self, todo_id: int):
-        pass
+    def remove_item(self, todo: Todo):
+        self._list = [item for item in self._list if item.todo_id != todo.todo_id]
+        return True
 
 
 class SqlalchemyDatabase:
