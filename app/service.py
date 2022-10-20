@@ -2,24 +2,27 @@ from uuid import UUID
 
 from .dto import TodoCreateDto
 from .model import Todo
-from .repository import AbstractTodoRepository
+from .uow import AbstractTodoUnitOfWork
 
 
 class TodoService:
-    def __init__(self, todo_repository: AbstractTodoRepository):
-        self._repository = todo_repository
+    def __init__(self, todo_uow: AbstractTodoUnitOfWork):
+        self.uow = todo_uow
 
     def get_all(self) -> list[Todo]:
-        return self._repository.get_all()
+        with self.uow:
+            return self.uow.todos.get_all()
 
     def get_by_id(self, todo_id: UUID) -> Todo | None:
-        return self._repository.get_by_id(todo_id)
+        with self.uow:
+            return self.uow.todos.get_by_id(todo_id)
 
     def create_todo(self, dto: TodoCreateDto) -> Todo:
         todo = Todo(title=dto.title, is_completed=dto.is_completed)
-        return self._repository.add(todo)
+        with self.uow:
+            return self.uow.todos.add(todo)
 
     def delete_by_id(self, todo_id: UUID) -> bool:
-        todo = self._repository.get_by_id(todo_id)
-        self._repository.delete(todo)
-        return True
+        with self.uow:
+            todo = self.uow.todos.get_by_id(todo_id)
+            return self.uow.todos.delete(todo)

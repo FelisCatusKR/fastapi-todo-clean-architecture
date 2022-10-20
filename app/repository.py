@@ -4,7 +4,6 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .database import InMemoryDatabase
 from .model import Todo
 
 
@@ -27,20 +26,25 @@ class AbstractTodoRepository(abc.ABC):
 
 
 class InMemoryTodoRepository(AbstractTodoRepository):
-    def __init__(self, db: InMemoryDatabase):
-        self._db = db
+    _set: set[Todo]
+
+    def __init__(self, memory_set: set):
+        self._set = memory_set
 
     def add(self, todo: Todo) -> Todo:
-        return self._db.add_item(todo)
+        new_todo = Todo(title=todo.title, is_completed=todo.is_completed)
+        self._set.add(new_todo)
+        return new_todo
 
     def get_by_id(self, todo_id: UUID) -> Todo | None:
-        return self._db.get_item_by_id(todo_id)
+        return next((todo for todo in self._set if todo.todo_id == todo_id), None)
 
     def get_all(self) -> list[Todo]:
-        return self._db.get_all_items()
+        return [todo for todo in self._set]
 
-    def delete(self, todo: Todo) -> bool:
-        return self._db.remove_item(todo)
+    def delete(self, todo: Todo):
+        self._set.remove(todo)
+        return True
 
 
 class SqlalchemyTodoRepository(AbstractTodoRepository):
